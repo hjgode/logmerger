@@ -158,6 +158,46 @@ class TimestampedLineTransformer:
         else:
             return ret[0], strip_escape_sequences(ret[1]).rstrip()
 
+class DDMMYYYY_HHMMSSsTZ(TimestampedLineTransformer):
+    # konn-security-export.json.csv
+    # 19.03.2024 15:13:55.207+0100  Warning Sec None  GKLOG(INTRANET_dest_DROP) IN=eth0 OUT=eth0...
+    timestamp_pattern = r"\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}\.\d{3,}\s?(?:Z|[+-]\d{4})"
+    pattern = fr"(({timestamp_pattern})\s)"
+    #strptime_format = datetime.fromisoformat
+    # see https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+    #pattern = fr"(.*)(- \[({timestamp_pattern})\]\s)"
+    strptime_format = "%d.%m.%Y %H:%M:%S.%f%z"
+    has_timezone = True
+    
+    #timestamp_match_group = 3
+    #sub_repl = r"\1"
+
+    def __init__(self):
+        super().__init__(self.pattern, self.strptime_format)
+        
+class TimestampDDMMYYYY(TimestampedLineTransformer):
+    # 91.194.60.14 - - [16/Sep/2023:19:05:06 +0000] "GET /python_nutshell_app_a_search HTTP/1.1" 200 1027 "-"
+    #   "http.rb/5.1.1 (Mastodon/4.1.3; +https://mamot.fr/) Bot" "91.194.60.14" response-time=0.002
+    '''
+    timestamp_pattern = r"\d{2}\/\w+\/\d{4}:\d{2}:\d{2}:\d{2} [+-]\d{4}"
+    pattern = fr"(.*)(- \[({timestamp_pattern})\]\s)"
+    strptime_format = "%d/%b/%Y:%H:%M:%S %z"
+    timestamp_match_group = 3
+    sub_repl = r"\1"
+    '''
+    # log files with timestamp "timestamp=14.08.2024 08:08:03.963;..."
+    timestamp_pattern = r"\d{2}.\d{2}.\d{4} \d{2}:\d{2}:\d{2}\.\d{3,}"
+    pattern = fr"(timestamp=)({timestamp_pattern});"
+    #strptime_format = datetime.fromisoformat
+    #has_timezone = True
+    
+    #pattern = fr"(.*)(- \[({timestamp_pattern})\]\s)"
+    strptime_format = "%d.%m.%Y %H:%M:%S.%f" #
+    timestamp_match_group = 2
+    sub_repl = r"\1"
+
+    def __init__(self):
+        super().__init__(self.pattern, self.strptime_format)
 
 class YMDHMScommaFTZ(TimestampedLineTransformer):
     # log files with timestamp "YYYY-MM-DD HH:MM:SS,SSS<timezone>"
